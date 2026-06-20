@@ -1,0 +1,9 @@
+# Sensitive files
+.env
+
+# Database and logs
+db.json
+admin-log.json
+
+# Node modules
+node_modules/

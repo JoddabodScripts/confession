@@ -1,0 +1,13 @@
+{
+  "name": "nerimity-confession-bot",
+  "version": "1.0.0",
+  "description": "Anonymous confessions bot for Nerimity",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@nerimity/nerimity.js": "latest",
+    "dotenv": "^17.4.2"
+  }
+}
