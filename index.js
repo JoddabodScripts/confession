@@ -351,7 +351,7 @@ function updatePresence(client) {
       },
       {
         action:       "Watching",
-        name:         "over anonymous whispers",
+        name:         "Anonymous Confessions",
         startedAt:    Date.now(),
         title:        "🤫",
         subtitle:     "Your secret is safe",
