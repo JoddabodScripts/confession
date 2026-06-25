@@ -331,6 +331,40 @@ async function onMessageCreate(client, message) {
 
 }
 
+// ─── RICH PRESENCE ───────────────────────────────────────────────────────────
+
+/**
+ * Cycle between rich presence activities every 15 seconds.
+ */
+let activityIndex = 0;
+function updatePresence(client) {
+  try {
+    const serverCount = client.servers?.cache?.size ?? 0;
+    const serverLabel = `${serverCount} server${serverCount !== 1 ? "s" : ""}`;
+    const activities = [
+      {
+        action:       "Playing",
+        name:         "Confession Bot",
+        startedAt:    Date.now(),
+        title:        serverLabel,
+        subtitle:     "Type !confess-setup",
+      },
+      {
+        action:       "Watching",
+        name:         "over anonymous whispers",
+        startedAt:    Date.now(),
+        title:        "🤫",
+        subtitle:     "Your secret is safe",
+      },
+    ];
+    const activity = activities[activityIndex % activities.length];
+    activityIndex += 1;
+    client.user?.setActivity(activity);
+  } catch (e) {
+    console.error("[bot] Failed to update presence:", e.message);
+  }
+}
+
 // ─── BOT BOOTSTRAP ───────────────────────────────────────────────────────────
 
 const client = new Client();
@@ -339,6 +373,8 @@ client.on(Events.Ready, () => {
   console.log(`[bot] Logged in as ${client.user?.username}`);
   console.log(`[bot] Database : ${path.resolve(DB_PATH)}`);
   console.log(`[bot] Audit log: ${path.resolve(LOG_PATH)}`);
+  updatePresence(client);
+  setInterval(() => updatePresence(client), 15000);
 });
 
 client.on(Events.MessageCreate, (message) => {
