@@ -60,6 +60,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 5. Make your changes
 6. Test thoroughly in a test Nerimity server
 
+
 ## Code Style Guidelines
 
 - Use meaningful variable and function names

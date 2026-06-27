@@ -4,23 +4,26 @@
 
 require("dotenv").config();
 
-const DB_PATH  = "./db.json";
+const DB_PATH = "./db.json";
 const LOG_PATH = "./admin-log.json";
 
 // ─── IMPORTS ──────────────────────────────────────────────────────────────────
 
 const { Client, Events, RolePermissions } = require("@nerimity/nerimity.js");
-const { confessionEmbed }                  = require("./embed.js");
-const fs   = require("fs");
+const { confessionEmbed } = require("./embed.js");
+const fs = require("fs");
 const path = require("path");
-const cr   = require("crypto");
+const cr = require("crypto");
 
 // ─── PERSISTENCE ──────────────────────────────────────────────────────────────
 
 function loadDb() {
   if (!fs.existsSync(DB_PATH)) return {};
-  try { return JSON.parse(fs.readFileSync(DB_PATH, "utf8")); }
-  catch { return {}; }
+  try {
+    return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+  } catch {
+    return {};
+  }
 }
 
 function saveDb(db) {
@@ -36,11 +39,15 @@ function findByServerId(db, serverId) {
  * don't have to re-learn their server key on re-setup.
  */
 function upsertServer(db, serverId, channelId) {
-  const existing  = findByServerId(db, serverId);
+  const existing = findByServerId(db, serverId);
   const serverKey = existing ? existing[0] : generateServerKey();
-  const count     = existing ? existing[1].confessionCount : 0;
+  const count = existing ? existing[1].confessionCount : 0;
 
-  db[serverKey] = { serverId, confessionChannelId: channelId, confessionCount: count };
+  db[serverKey] = {
+    serverId,
+    confessionChannelId: channelId,
+    confessionCount: count,
+  };
   saveDb(db);
   return serverKey;
 }
@@ -54,10 +61,55 @@ function incrementCount(db, key) {
 // ─── SERVER KEY ───────────────────────────────────────────────────────────────
 
 const WORDS = [
-  "apple", "brave", "cedar", "delta", "ember", "frost", "grove", "haven",
-  "ivory", "jade",  "kite",  "lemon", "maple", "noble", "ocean", "pearl",
-  "quill", "river", "stone", "tiger", "ultra", "vivid", "willow", "xenon",
-  "yield", "zephyr",
+  "apple",
+  "brave",
+  "cedar",
+  "delta",
+  "ember",
+  "frost",
+  "grove",
+  "haven",
+  "ivory",
+  "jade",
+  "kite",
+  "lemon",
+  "maple",
+  "noble",
+  "ocean",
+  "pearl",
+  "quill",
+  "river",
+  "stone",
+  "tiger",
+  "ultra",
+  "vivid",
+  "willow",
+  "xenon",
+  "yield",
+  "zephyr",
+  "anchor",
+  "breeze",
+  "cactus",
+  "dragon",
+  "eclipse",
+  "falcon",
+  "golden",
+  "harbor",
+  "island",
+  "jasper",
+  "kettle",
+  "lagoon",
+  "marble",
+  "nectar",
+  "oracle",
+  "piano",
+  "quartz",
+  "raven",
+  "silver",
+  "tempest",
+  "volcano",
+  "wizard",
+  "zenith",
 ];
 
 /** Human-readable key like "cedar-38". */
@@ -71,8 +123,11 @@ function generateServerKey() {
 
 function loadLog() {
   if (!fs.existsSync(LOG_PATH)) return [];
-  try { return JSON.parse(fs.readFileSync(LOG_PATH, "utf8")); }
-  catch { return []; }
+  try {
+    return JSON.parse(fs.readFileSync(LOG_PATH, "utf8"));
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -84,11 +139,14 @@ function loadLog() {
 function writeAuditLog(userId, serverKey, confessionNum, content) {
   const log = loadLog();
 
-  const userIdHash  = cr.createHash("sha256").update(String(userId)).digest("hex");
+  const userIdHash = cr
+    .createHash("sha256")
+    .update(String(userId))
+    .digest("hex");
   const contentHash = cr.createHash("sha256").update(content).digest("hex");
 
   log.push({
-    timestamp:     new Date().toISOString(),
+    timestamp: new Date().toISOString(),
     serverKey,
     confessionNum,
     userIdHash,
@@ -108,7 +166,10 @@ const MENTION_RE = /\[@:[^\]]*\]/g;
  */
 function stripMentions(content) {
   if (!content) return null;
-  const cleaned = content.replace(MENTION_RE, "").trim().replace(/\s{2,}/g, " ");
+  const cleaned = content
+    .replace(MENTION_RE, "")
+    .trim()
+    .replace(/\s{2,}/g, " ");
   return cleaned !== content ? cleaned : null;
 }
 
@@ -120,23 +181,27 @@ async function handleSetup(message) {
 
   const member = message.member;
   if (!member) {
-    await message.reply("Could not verify your permissions – are you a member of this server?");
+    await message.reply(
+      "Could not verify your permissions – are you a member of this server?",
+    );
     return;
   }
 
   if (!member.hasPermission(RolePermissions.ADMIN)) {
-    await message.reply("Only server admins can set up the confession channel.");
+    await message.reply(
+      "Only server admins can set up the confession channel.",
+    );
     return;
   }
 
-  const db        = loadDb();
+  const db = loadDb();
   const serverKey = upsertServer(db, server.id, message.channelId);
 
   await message.reply(
     "✅ **Confession channel set to this channel.**\n\n" +
-    `Your server key: \`${serverKey}\`\n\n` +
-    "Share it with members — they DM me:\n" +
-    `\`!confess ${serverKey} <their message>\``
+      `Your server key: \`${serverKey}\`\n\n` +
+      "Share it with members — they DM me:\n" +
+      `\`!confess ${serverKey} <their message>\``,
   );
 }
 
@@ -146,17 +211,17 @@ const CONFESS_RE = /^!confess\s+(\S+)\s+([\s\S]+)$/i;
 
 async function handleConfess(client, message) {
   const content = message.content?.trim() ?? "";
-  const match   = content.match(CONFESS_RE);
+  const match = content.match(CONFESS_RE);
 
   if (!match) {
     await message.channel.send(
-      "Usage:\n`!confess <serverKey> <your confession>`"
+      "Usage:\n`!confess <serverKey> <your confession>`",
     );
     return;
   }
 
-  const key       = match[1].toLowerCase();
-  const text      = match[2].trim();
+  const key = match[1].toLowerCase();
+  const text = match[2].trim();
   const cleanText = stripMentions(text) ?? text;
 
   if (!cleanText) {
@@ -164,31 +229,33 @@ async function handleConfess(client, message) {
     return;
   }
 
-  const db     = loadDb();
+  const db = loadDb();
   const record = db[key];
   if (!record) {
     await message.channel.send(
-      `❌ Unknown server key \`${key}\`. Double-check and try again.`
+      `❌ Unknown server key \`${key}\`. Double-check and try again.`,
     );
     return;
   }
 
-  const count     = incrementCount(db, key);
-  const target    = client.channels.cache.get(record.confessionChannelId);
+  const count = incrementCount(db, key);
+  const target = client.channels.cache.get(record.confessionChannelId);
 
   if (!target) {
     await message.channel.send(
-      "⚠️ Couldn't find the confession channel. Ask the admin to re-run `!confess-setup`."
+      "⚠️ Couldn't find the confession channel. Ask the admin to re-run `!confess-setup`.",
     );
     return;
   }
 
   try {
-    await target.send("- Anonymous confession -", { htmlEmbed: confessionEmbed(count, cleanText) });
+    await target.send("- Anonymous confession -", {
+      htmlEmbed: confessionEmbed(count, cleanText),
+    });
   } catch (err) {
     console.error("[confess] Failed to post:", err);
     await message.channel.send(
-      "⚠️ Failed to post. The bot may lack send permission in that channel."
+      "⚠️ Failed to post. The bot may lack send permission in that channel.",
     );
     return;
   }
@@ -203,7 +270,7 @@ async function onMessageCreate(client, message) {
   if (message.user.id === client.user?.id) return;
 
   const content = message.content?.trim() ?? "";
-  const isDM    = !message.channel.server;
+  const isDM = !message.channel.server;
 
   if (isDM && content.toLowerCase().startsWith("!confess")) {
     await handleConfess(client, message);
@@ -218,9 +285,21 @@ function updatePresence(client) {
   try {
     const count = client.servers?.cache?.size ?? 0;
     const label = `${count} server${count !== 1 ? "s" : ""}`;
-    const acts  = [
-      { action: "Playing", name: "Confession Bot",     startedAt: Date.now(), title: label,      subtitle: "Type !confess-setup" },
-      { action: "Watching", name: "Anonymous Confessions", startedAt: Date.now(), title: "🤫", subtitle: "Your secret is safe" },
+    const acts = [
+      {
+        action: "Playing",
+        name: "Confession Bot",
+        startedAt: Date.now(),
+        title: label,
+        subtitle: "Type !confess-setup",
+      },
+      {
+        action: "Watching",
+        name: "Anonymous Confessions",
+        startedAt: Date.now(),
+        title: "🤫",
+        subtitle: "Your secret is safe",
+      },
     ];
     client.user?.setActivity(acts[activityIndex % acts.length]);
     activityIndex += 1;
